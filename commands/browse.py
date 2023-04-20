@@ -36,19 +36,15 @@ def split_text(text, max_length=8192):
         yield "\n".join(current_chunk)
 
 
-def get_response(url, headers=cfg.user_agent_header, timeout=10):
+def get_response(url, timeout=10):
     try:
-        # Restrict access to local files
-        if check_local_file_access(url):
-            raise ValueError('Access to local files is restricted')
-
         # Most basic check if the URL is valid:
         if not url.startswith('http://') and not url.startswith('https://'):
             raise ValueError('Invalid URL format')
 
         sanitized_url = sanitize_url(url)
 
-        response = requests.get(sanitized_url, headers=headers, timeout=timeout)
+        response = requests.get(sanitized_url, timeout=timeout)
 
         # Check if the response contains an HTTP error
         if response.status_code >= 400:
@@ -83,8 +79,7 @@ def scrape_text(url):
     return text
 
 
-
-def get_text_summary(url, summary_model):
+def get_text_summary(url, query, summary_model):
     """Return the results of a google search"""
     text = scrape_text(url)
     """Summarize text using the LLM model"""
@@ -97,7 +92,7 @@ def get_text_summary(url, summary_model):
 
     for i, chunk in enumerate(chunks):
         print(f"Summarizing chunk {i + 1} / {len(chunks)}")
-        prompt = f"Summarize the following text\n\n{chunk}"
+        prompt = f"The following is scraped text from \"{url}\". Extract the information related to \"{query}\"\n\n{chunk}"
         summary = summary_model.generate(prompt)
 
         summaries.append(summary)
@@ -105,14 +100,14 @@ def get_text_summary(url, summary_model):
     print(f"Summarized {len(chunks)} chunks.")
 
     combined_summary = "\n".join(summaries)
-    prompt = f"Summarize the following text\n\n{combined_summary}"
-    final_summary = summary_model.generate(prompt)
+    get_final_extraction_prompt = f"The following texts are summaries of \"{url}\". Some of them might be related to \"{query}\", extract and generate the information.\n\n{combined_summary}"
+    final_extraction = summary_model.generate(get_final_extraction_prompt)
 
-    return """ "Result" : """ + final_summary
+    return final_extraction
 
 
-def browse_website(url, summary_model):
+def browse_website(url, query, summary_model):
     """Browse a website and return the summary and links"""
-    summary = get_text_summary(url, summary_model)
+    summary = get_text_summary(url, query, summary_model)
 
     return summary

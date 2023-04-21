@@ -1,4 +1,28 @@
+import logging
+import time
+
 import openai
+
+
+def request(
+    model,
+    messages,
+    temperature=1.0
+):
+    while True:
+        try:
+            response = openai.ChatCompletion.create(
+                model=model,
+                messages=messages,
+                temperature=temperature
+            )
+            break
+        except openai.error.RateLimitError as e:
+            logging.warning(str(e))
+            logging.warning("Retrying...")
+            time.sleep(1)
+
+    return response
 
 
 class GPTChatModel:
@@ -13,11 +37,10 @@ class GPTChatModel:
 
     def chat(self, user_input, temperature=None):
         self.conv.append({"role": "user", "content": user_input})
-        response = openai.ChatCompletion.create(
+        response = request(
             model=self.model,
             messages=self.conv,
             temperature=self.temperature if temperature is None else temperature
-
         )
         self.conv.append({
             "role": "assistant",
@@ -27,13 +50,13 @@ class GPTChatModel:
         return response["choices"][0]["message"]["content"]
 
     def generate(self, user_input, temperature=None):
-        response = openai.ChatCompletion.create(
+        response = request(
             model=self.model,
             messages=[
                 {"role": "system", "content": self.system},
                 {"role": "user", "content": user_input}
             ],
-            temperature=self.temperature if temperature is not None else temperature
+            temperature=self.temperature if temperature is None else temperature
         )
 
         return response["choices"][0]["message"]["content"]

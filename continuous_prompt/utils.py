@@ -17,7 +17,7 @@ def extract_dict(string_with_dict: str):
     try:
         extracted_dict = ast.literal_eval(dict_string)
     except SyntaxError as e:
-        logging.error("Syntax error, try to fix string.")
+        logging.error(f"Syntax error for \"{dict_string}\", try to fix string.")
         def replace(match_obj):
             if match_obj.group(1).endswith(','):
                 replace_holder = match_obj.group(1)[:-1]
@@ -43,6 +43,30 @@ def extract_dict(string_with_dict: str):
 def extract_double_quotes(string_with_double_quotes: str):
     quoted_strings = re.findall("\"([^\"]*)\"", string_with_double_quotes)
     return quoted_strings
+
+
+def filter_unrelated_contents(contents, question, summary_model):
+    filter_prompt = "The following is a text:\n\n{content}. " \
+                    "Is it related to \"{question}\"\n\n " \
+                    "You should respond with a python dictionary, which contains the following keys:\n" \
+                    "\"related\": a boolean variable indicates whether the two are related. " \
+                    "It should be False if the text states no information is given or the two are not related.\n" \
+                    "\"explanation\": a string that explain why the \"related\" is True or False. " \
+                    "Respond with only a python dictionary. Do not generate other python codes. Be careful to follow python syntax."
+
+    filter_dicts = []
+    for content in contents:
+        dict = summary_model.generate(filter_prompt.format(content=content, question=question))
+        dict = extract_dict(dict)
+        filter_dicts.append(dict)
+    return filter_dicts
+
+
+def format_web_summary(web_contents):
+    summary = ""
+    for i, c in enumerate(web_contents):
+        summary += f"Summary {i}: {c}\n\n"
+    return summary
 
 
 def anykey_to_continue():

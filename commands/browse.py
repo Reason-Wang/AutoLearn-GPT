@@ -1,9 +1,14 @@
+import logging
+
 from bs4 import BeautifulSoup
 import requests
 from urllib.parse import urlparse, urljoin
 
 
 # Function to check if the URL is valid
+from openai import InvalidRequestError
+
+
 def is_valid_url(url):
     try:
         result = urlparse(url)
@@ -93,14 +98,20 @@ def get_text_summary(url, query, summary_model):
     for i, chunk in enumerate(chunks):
         print(f"Summarizing chunk {i + 1} / {len(chunks)}")
         prompt = f"The following is scraped text from \"{url}\". Extract the information related to \"{query}\"\n\n{chunk}"
-        summary = summary_model.generate(prompt)
+        try:
+            summary = summary_model.generate(prompt)
+        except InvalidRequestError as e:
+            logging.error(f"{e}, skip this chunk.")
+            continue
+        except Exception as e:
+            raise e
 
         summaries.append(summary)
 
     print(f"Summarized {len(chunks)} chunks.")
 
     combined_summary = "\n".join(summaries)
-    get_final_extraction_prompt = f"The following texts are summaries of \"{url}\". Some of them might be related to \"{query}\", extract and generate the information.\n\n{combined_summary}"
+    get_final_extraction_prompt = f"The following texts are summaries of \"{url}\". Extract the information related to \"{query}\" and ignore other unrelated information.\n\n{summaries}"
     final_extraction = summary_model.generate(get_final_extraction_prompt)
 
     return final_extraction

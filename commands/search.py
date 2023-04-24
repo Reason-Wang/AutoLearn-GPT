@@ -1,13 +1,11 @@
-import json
+import os
 
-from googleapiclient.discovery import build
-from googleapiclient.errors import HttpError
 from duckduckgo_search import ddg
+from dotenv import load_dotenv
 
-
-GOOGLE_API_KEY = "AIzaSyBhLeuyM1yi9euXPZMDsKaC9N93iWm3j1A"
-CUSTOM_SEARCH_ENGINE_ID="d48902608f29a400a"
-
+load_dotenv()
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+CUSTOM_SEARCH_ENGINE_ID = os.getenv("CUSTOM_SEARCH_ENGINE_ID", "")
 
 def google_search(query, num_results=8):
     """Return the results of a google search"""

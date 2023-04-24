@@ -1,8 +1,11 @@
 import logging
 import os
 
+import openai
 import pinecone
 from dotenv import load_dotenv
+from termcolor import colored
+
 from commands.browse import browse_website
 from commands.search import google_official_search
 from continuous_prompt.utils import (
@@ -10,16 +13,22 @@ from continuous_prompt.utils import (
     extract_double_quotes,
     anykey_to_continue,
     filter_unrelated_contents,
-    format_web_summary
+    format_web_summary, Logger
 )
 from model.openai.modeling_chat import GPTChatModel
 
 os.environ["HTTPS_PROXY"] = "http://127.0.0.1:1081"
 os.environ["HTTP_PROXY"] = "http://127.0.0.1:1081"
 
+load_dotenv()
+
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+
 TABLE_NAME = os.getenv("TABLE_NAME", "")
 
+openai.api_key = OPENAI_API_KEY
+
+LOGGER = Logger()
 
 class GPTChatPrompter:
     def __init__(self):
@@ -53,7 +62,7 @@ class GPTChatPrompter:
                                        "answer, it should be the original answer if \"correct\" is True, " \
                                        "or it should be the answer generated from searching summaries if " \
                                        "\"has_answer\" is True. Tf the searching summaries have different answers, You should generate the answer based on most votes. " \
-                                       "For other cases of \"corrent\" and \"has_answer\", \"answer\" should be null string." \
+                                       "For other cases of \"correct\" and \"has_answer\", \"answer\" should be null string." \
                                        "\n\"explanation\": a string that explain why previous keys should be set those values. " \
                                        "Be careful to follow python syntax."
 
@@ -62,8 +71,8 @@ def action_agent(gpt_answer, prompter, model):
     gpt_actions = model.chat(prompter.action_generate)
     action_dict = extract_dict(gpt_actions)
 
-    print(f"1. Search the internet.\n2. Do nothing.\nI think I should do "
-          f"{action_dict['choice']}. {action_dict['explanation']}")
+    LOGGER.info(f"Choose between following actions:\n1. Search the internet.\n2. Do nothing.\n", "System", "blue")
+    LOGGER.info(f"I think I should do {action_dict['choice']}. {action_dict['explanation']}", "System", "yellow")
     anykey_to_continue()
 
     choice = action_dict["choice"]
@@ -80,26 +89,26 @@ def action_agent(gpt_answer, prompter, model):
     return action
 
 
-def search_agent(prompter, model, summary_model):
+def search_agent(question, prompter, model, summary_model):
     string_with_query = model.generate(prompter.query_generate.format(question=question))
-    query = extract_double_quotes(string_with_query)[0]
+    query = extract_double_quotes(string_with_query)
 
-    print(f"I will google with \"{query}\"")
+    LOGGER.info(f"I will google with \"{query}\"", "Model", "yellow")
     anykey_to_continue()
 
     web_links = google_official_search(query, num_results=5)
     web_contents = []
     for web_link in web_links:
-        print(f"Processing content from {web_link}")
+        LOGGER.info(f"Processing content from {web_link}", "Model", "yellow")
         web_content = browse_website(web_link, query, summary_model)
-        print(f"Content of {web_link}:\n{web_content}")
+        LOGGER.info(f"Content of {web_link}:\n{web_content}", "Model", "yellow")
         web_contents.append(web_content)
 
     return web_contents
 
 
 def filtration_agent(web_contents, question, summary_model):
-    print("Filtering unrelated contents...")
+    LOGGER.info("I am filtering unrelated contents...", "Model", "yellow")
     filter_dicts = filter_unrelated_contents(web_contents, question, summary_model)
     filtered_contents = []
     for d, c in zip(filter_dicts, web_contents):
@@ -110,7 +119,7 @@ def filtration_agent(web_contents, question, summary_model):
 
 
 def analysis_agent(question, gpt_answer, formated_contents, prompter, summary_model):
-    print("Analyzing the results...")
+    LOGGER.info("I am analyzing the results...", "Model", "yellow")
     string_with_answer_dict = summary_model.generate(
         prompter.correct_answer_generate.format(question=question, gpt_answer=gpt_answer,
                                                 filtered_contents=formated_contents))
@@ -118,43 +127,59 @@ def analysis_agent(question, gpt_answer, formated_contents, prompter, summary_mo
 
     should_correct = "" if answer_dict["correct"] else "not "
     contain_answer = "" if answer_dict["has_answer"] else "not "
-    print(f"My original answer is {should_correct}correct. "
+    LOGGER.info(f"My original answer is {should_correct}correct. "
           f"And the searching results do {contain_answer}contain the answer. "
-          f"So the answer is \"{answer_dict['answer']}\"")
+          f"So the answer is \"{answer_dict['answer']}\"", "Model", "yellow")
 
     return answer_dict
+
+def memory_agent(question, answer_dict, model):
+    if answer_dict is not None:
+        if (not answer_dict["correct"]) and answer_dict["has_answer"]:
+            logging.info("This is some thing I don't know, should memorize it.")
+            text = question + '\n' + answer_dict['answer']
+            model.memory_brain.memorize(text)
+            # memory_brain.memorize(text)
+            LOGGER.info(f"I have memorized the knowledge:", "Model", "yellow")
+            logging.info(colored(text, "green"))
 
 
 def prompt_gptchat_model():
     prompter = GPTChatPrompter()
-    model = GPTChatModel(OPENAI_API_KEY, system=prompter.model_system)
-    summary_model = GPTChatModel(OPENAI_API_KEY, system=prompter.summary_system)
+    memory_table = TABLE_NAME
+    model = GPTChatModel(memory_table, system=prompter.model_system)
+    summary_model = GPTChatModel(memory_table, system=prompter.summary_system, no_brain=True)
 
     # question = "What is the current version of Huggingface Transformers?"
-    question = input("Ask a question: ")
-    gpt_answer = model.chat(question)
+
+    LOGGER.info("Ask a question: ", "System", "blue")
+    question = input()
+    gpt_answer = model.generate_with_memory(question)
+    LOGGER.info(gpt_answer, "Model", "yellow")
     answer_dict = {"correct": True, "has_answer": False, "answer": gpt_answer}
 
-    print(f"{gpt_answer}")
     anykey_to_continue()
 
     action = action_agent(gpt_answer, prompter, model)
 
     if action == "search the internet":
-        web_contents = search_agent(prompter, model, summary_model)
+        web_contents = search_agent(question, prompter, model, summary_model)
 
-        filtered_contents = filter_unrelated_contents(web_contents, question, summary_model)
+        filtered_contents = filtration_agent(web_contents, question, summary_model)
 
         formated_contents = format_web_summary(filtered_contents)
-        print("The searching summary is:\n{formated_contents}".format(formated_contents=formated_contents))
+        LOGGER.debug(
+            "The searching summary is:\n{formated_contents}".format(formated_contents=formated_contents),
+            "Debug",
+            "red")
 
         answer_dict = analysis_agent(question, gpt_answer, formated_contents, prompter, summary_model)
-
+        LOGGER.debug(str(answer_dict), "Debug", "red")
         anykey_to_continue()
+        memory_agent(question, answer_dict, model)
 
     elif action == "do noting":
-        print(f"Didn't do anything")
-        anykey_to_continue()
+        LOGGER.info(f"Didn't do anything", "System", "blue")
 
 
 if __name__ == "__main__":

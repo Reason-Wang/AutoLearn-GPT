@@ -1,3 +1,6 @@
 .idea
 *.ipynb
 .env
+*.mp4
+*.jpg
+*.png

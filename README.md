@@ -20,3 +20,5 @@ https://user-images.githubusercontent.com/72866053/234065836-c725abb3-0d69-4ca4-
 2. If the answer might be incorrect, search the internet to collect information
 3. The model filters unrelated information, and try to generate an answer from filtered information
 4. The model compare the new answer with its original answer. if the original is correct, the model memorizes the new answer
+
+![how_it_works](https://user-images.githubusercontent.com/72866053/234168105-97f9cdb1-78c4-4b25-b02b-009966782d57.png)

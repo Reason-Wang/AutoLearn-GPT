@@ -1,5 +1,4 @@
 import os
-
 from duckduckgo_search import ddg
 from dotenv import load_dotenv
 

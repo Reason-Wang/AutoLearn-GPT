@@ -65,7 +65,7 @@ class GPTChatModel:
     def generate_with_memory(self, user_input: str, temperature=None):
         if self.no_brain:
             raise RuntimeError("This model does not contain a memory brain.")
-        logging.info(colored("I am trying to remember related content...", "yellow"))
+        logging.info(colored("Model: I am trying to remember related content...", "yellow"))
         memories = self.memory_brain.remember(user_input)
         # answering_with_memory_prompt = "The following are some memories you just recalled for the question \"{question}\". " \
         #                                "These memories consist of queries paired with explanation.\n{formated_memories}\n\n" \

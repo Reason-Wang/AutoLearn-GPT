@@ -22,13 +22,12 @@ def extract_dict(string_with_dict: str, llm_fix=True):
     try:
         extracted_dict = ast.literal_eval(dict_string)
     except (SyntaxError, ValueError) as e:
-        logging.error(f"{e} for \"{dict_string}\", try to fix string.")
+        logging.debug(f"{e} for \"{dict_string}\", try to fix string.")
         def replace(match_obj):
             if match_obj.group(1).endswith(','):
                 replace_holder = match_obj.group(1)[:-1]
             else:
                 replace_holder = match_obj.group(1)
-            print(replace_holder)
             if replace_holder.isdigit():
                 return '": ' + replace_holder + ', "'
             elif replace_holder == 'true' or replace_holder == 'false':
@@ -49,16 +48,16 @@ def extract_dict(string_with_dict: str, llm_fix=True):
         raise e
 
     if possible_dict_string is not None:
-        logging.error(f"Dict string after fixing: \"{possible_dict_string}\"")
+        logging.debug(f"Dict string after fixing: \"{possible_dict_string}\"")
         try:
             extracted_dict = ast.literal_eval(possible_dict_string)
         except SyntaxError as e:
             if llm_fix:
-                logging.error(f"Still syntax error, try to fix with llm.")
+                logging.debug(f"Still syntax error, try to fix with llm.")
                 model = GPTChatModel(memory_brain="", system="You are a helpful assistant. You should finish the task as best as possible.", no_brain=True)
                 dict_fix_prompt = f"The following is a python dictionary string that may contain some syntax errors. For example, the first character of boolean values may be lower case, string may not be quoted. Try to fix it and generate the correct python dictionary string. \n{dict_string}"
                 llm_fixed_dict_string = model.generate(dict_fix_prompt)
-                logging.info(f"Dict string after llm fixing: \"{llm_fixed_dict_string}\"")
+                logging.debug(f"Dict string after llm fixing: \"{llm_fixed_dict_string}\"")
                 extracted_dict = extract_dict(llm_fixed_dict_string, llm_fix=False)
             else:
                 raise e
@@ -121,3 +120,8 @@ class Logger:
 
     def debug(self, message, role, color):
         self.logger.debug(colored(f"{role}: {message}", color))
+
+
+def use_proxy(http_port=1081):
+    os.environ["HTTPS_PROXY"] = "http://127.0.0.1:" + str(http_port)
+    os.environ["HTTP_PROXY"] = "http://127.0.0.1:" + str(http_port)

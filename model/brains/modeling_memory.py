@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 
 from commands.embed import get_embedding
 
-os.environ["HTTPS_PROXY"] = "http://127.0.0.1:1081"
-os.environ["HTTP_PROXY"] = "http://127.0.0.1:1081"
+# os.environ["HTTPS_PROXY"] = "http://127.0.0.1:10809"
+# os.environ["HTTP_PROXY"] = "http://127.0.0.1:10809"
 
 load_dotenv()
 

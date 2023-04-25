@@ -13,13 +13,12 @@ from continuous_prompt.utils import (
     extract_double_quotes,
     anykey_to_continue,
     filter_unrelated_contents,
-    format_web_summary, Logger
+    format_web_summary, Logger, use_proxy
 )
 from model.openai.modeling_chat import GPTChatModel
 
-os.environ["HTTPS_PROXY"] = "http://127.0.0.1:1081"
-os.environ["HTTP_PROXY"] = "http://127.0.0.1:1081"
-
+# os.environ["HTTPS_PROXY"] = "http://127.0.0.1:10809"
+# os.environ["HTTP_PROXY"] = "http://127.0.0.1:10809"
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -57,7 +56,7 @@ class GPTChatPrompter:
                                        "should respond with a python dictionary, which contains the following " \
                                        "keys.\n\"correct\": a boolean variable indicates whether the original " \
                                        "answer is correct. It should be False if the original answer contradicts " \
-                                       "with searching summaries.\n\"has_answer\": a boolean variable indicates " \
+                                       "with searching summaries or provides incorrect information.\n\"has_answer\": a boolean variable indicates " \
                                        "whether the searching summary contains the answer.\n\"answer\": the correct " \
                                        "answer, it should be the original answer if \"correct\" is True, " \
                                        "or it should be the answer generated from searching summaries if " \
@@ -72,7 +71,7 @@ def action_agent(gpt_answer, prompter, model):
     action_dict = extract_dict(gpt_actions)
 
     LOGGER.info(f"Choose between following actions:\n1. Search the internet.\n2. Do nothing.\n", "System", "blue")
-    LOGGER.info(f"I think I should do {action_dict['choice']}. {action_dict['explanation']}", "System", "yellow")
+    LOGGER.info(f"I think I should do {action_dict['choice']}. {action_dict['explanation']}", "Model", "yellow")
     anykey_to_continue()
 
     choice = action_dict["choice"]
@@ -136,7 +135,7 @@ def analysis_agent(question, gpt_answer, formated_contents, prompter, summary_mo
 def memory_agent(question, answer_dict, model):
     if answer_dict is not None:
         if (not answer_dict["correct"]) and answer_dict["has_answer"]:
-            logging.info("This is some thing I don't know, should memorize it.")
+            LOGGER.info("This is some thing I don't know, should memorize it.", "Model", "yellow")
             text = question + '\n' + answer_dict['answer']
             model.memory_brain.memorize(text)
             # memory_brain.memorize(text)

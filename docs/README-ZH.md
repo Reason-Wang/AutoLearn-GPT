@@ -14,7 +14,7 @@
 
 + 复制`.env.template`文件，并命名为`.env`
 + 获取OpenAI的api key，pinecone的api key，google api key和google search engine id。(如果你不知道如何获取这些api key或id，可以参考Auto-GPT的[文档](https://significant-gravitas.github.io/Auto-GPT/configuration/search/)。) 
-+ 通过`python main.py`运行项目
++ 通过`python main.py`运行项目（如果位于中国大陆地区，需要使用代理才可正常运行）
 
 ## 🎶演示
 

@@ -1,6 +1,5 @@
-# SelfLearnGPT
+# SelfLearnGPT: GPT learns to improve itself
 
-------
 
 [EN](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/README.md) | [中文](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/docs/README-ZH.md)
 
@@ -12,9 +11,9 @@ This is an experimental project to explore whether GPT models can learn by thems
 
 + We tested the project with python 3.8. Install all the required packages with `pip install -r requirements.txt`
 
-+ copy `.env.template` to `.env`
-+ get your *openai api key*, *pinecone api key*, *google api key* and *google search engine id* and set them in .env (If you don't know how to get these id and keys, you can refer to Auto-GPT documentation [here](https://significant-gravitas.github.io/Auto-GPT/configuration/search/)) 
-+ start running with `python main.py`
++ Copy `.env.template` to `.env`
++ Get your *openai api key*, *pinecone api key*, *google api key* and *google search engine id* and set them in .env (If you don't know how to get these id and keys, you can refer to Auto-GPT documentation [here](https://significant-gravitas.github.io/Auto-GPT/configuration/search/)) 
++ Start running with `python main.py`
 
 ## 🎶Demo
 

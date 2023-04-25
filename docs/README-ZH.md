@@ -1,6 +1,5 @@
-# SelfLearnGPT
+# SelfLearnGPT: GPT learns to improve itself
 
-------
 
 [EN](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/README.md) | [中文](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/docs/README-ZH.md)
 

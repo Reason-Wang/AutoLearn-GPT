@@ -1,0 +1,9 @@
+beautifulsoup4==4.12.2
+duckduckgo_search==2.8.6
+google_api_python_client==2.86.0
+pinecone==0.1.0
+python-dotenv==1.0.0
+Requests==2.28.2
+termcolor==2.3.0
+torch==2.0.0
+transformers==4.28.1

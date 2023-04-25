@@ -27,3 +27,4 @@ https://user-images.githubusercontent.com/72866053/234065836-c725abb3-0d69-4ca4-
 3. 模型过滤掉不相干的信息，通过已过滤的信息回答问题
 4. 模型比较新的答案和原本的回答，如果原本的答案不正确，模型将记住现有的答案
 
+![how_it_works_zh](https://user-images.githubusercontent.com/72866053/234229415-272352da-0df4-40b9-842f-2979c9e36a1d.png)

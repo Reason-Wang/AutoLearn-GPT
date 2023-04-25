@@ -1,11 +1,10 @@
 # SelfLearnGPT: GPT learns to improve itself
 
-
-[EN](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/README.md) | [中文](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/docs/README-ZH.md)
+| [EN](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/README.md) | [中文](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/docs/README-ZH.md) |
 
 ## 😕什么是SelfLearnGPT
 
-这个一个探究GPT模型是否可以通过自身学习的实验性项目
+这个一个探究GPT模型是否可以通过自身学习的实验性项目。当前我们给ChatGPT模型配备了一个记忆大脑来存储一切ChatGPT可能不知道的内容。当使用ChatGPT完成任务时，首先会回忆(检索)相关的知识作为补充材料。
 
 ## 🧰如何使用
 

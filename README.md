@@ -1,12 +1,18 @@
+# SelfLearnGPT
+
+------
+
+[EN](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/README.md) | [中文](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/docs/README-ZH.md)
+
 ## 😕What is SelfLearnGPT
 
 This is an experimental project to explore whether GPT models can learn by themselves.
 
 ## 🧰How to use
 
-+ We tested the project with python3.8. Install all the required packages with `pip install -r requirements.txt`
++ We tested the project with python 3.8. Install all the required packages with `pip install -r requirements.txt`
 
-+ copy .env.template to .env
++ copy `.env.template` to `.env`
 + get your *openai api key*, *pinecone api key*, *google api key* and *google search engine id* and set them in .env (If you don't know how to get these id and keys, you can refer to Auto-GPT documentation [here](https://significant-gravitas.github.io/Auto-GPT/configuration/search/)) 
 + start running with `python main.py`
 
@@ -16,7 +22,7 @@ https://user-images.githubusercontent.com/72866053/234065836-c725abb3-0d69-4ca4-
 
 ## 📖How it works
 
-1. Ask a question to the model, and the model tries to answer the question with its memory
+1. Ask a question to the model, and the model tries to answer the question using information from its memory
 2. If the answer might be incorrect, search the internet to collect information
 3. The model filters unrelated information, and try to generate an answer from filtered information
 4. The model compare the new answer with its original answer. if the original is correct, the model memorizes the new answer

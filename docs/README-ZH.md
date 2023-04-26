@@ -1,5 +1,7 @@
 # AutoLearn-GPT: GPT learns to improve itself
 
+[![Stargazers repo roster for @Reason-Wang/AutoLearn-GPT](https://reporoster.com/stars/Reason-Wang/AutoLearn-GPT)](https://github.com/Reason-Wang/AutoLearn-GPT/stargazers)
+
 | [EN](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/README.md) | [中文](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/docs/README-ZH.md) |
 
 ## 😕什么是AutoLearn-GPT

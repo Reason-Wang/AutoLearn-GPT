@@ -47,7 +47,7 @@ class GPTChatModel:
             introduction_id = "00000000-0000-0000-0000-000000000000"
             introduction = self.memory_brain.remember_with_ids([introduction_id])[0]
             if introduction is None:
-                introduction = "SelfLearnGPT is an experimental project and model to explore " \
+                introduction = "AutoLearn-GPT is an experimental project and model to explore " \
                                 "whether GPT models can learn by themselves. The model can learn " \
                                 "new things and memorize them while interacting with humans."
                 self.memory_brain.memorize(introduction, id=introduction_id)

@@ -1,8 +1,8 @@
-# SelfLearnGPT: GPT learns to improve itself
+# AutoLearn-GPT: GPT learns to improve itself
 
 | [EN](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/README.md) | [中文](https://github.com/Reason-Wang/SelfLearnGPT/blob/main/docs/README-ZH.md) |
 
-## 😕What is SelfLearnGPT
+## 😕What is AutoLearn-GPT
 
 This is an experimental project to explore whether ChatGPT model can learn by itself. Currently we equip the model with a memory brain to store everything that ChatGPT may not know. When using the model to finish tasks, it first recall (retrieve) relevant knowledge and use that as supplementary materials.
 

@@ -1,9 +1,17 @@
 import torch
 from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
-
 from model.vicuna.compression import compress_module
 from model.vicuna.conversation import conv_templates
 from model.vicuna.conversation import SeparatorStyle
+
+from peft import (
+    LoraConfig,
+    get_peft_model,
+    get_peft_model_state_dict,
+    prepare_model_for_int8_training,
+    set_peft_model_state_dict,
+)
+from typing import List
 
 
 def load_model(model_name, device, num_gpus,  load_8bit=False, debug=False, cache_dir=None):
@@ -127,7 +135,8 @@ class Vicuna:
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
         self.device = device
-        self.model, self.tokenizer = load_model(
+
+        model, self.tokenizer = load_model(
             model_name,
             device,
             num_gpus,
@@ -135,6 +144,21 @@ class Vicuna:
             debug,
             cache_dir
         )
+
+        # if load_8bit:
+        #     model = prepare_model_for_int8_training(model)
+
+        config = LoraConfig(
+            r=8,
+            lora_alpha=16,
+            target_modules=["q_proj", "v_proj"],
+            lora_dropout=0.05,
+            bias="none",
+            task_type="CAUSAL_LM",
+        )
+
+        self.model = get_peft_model(model, config)
+
         conv_template = 'v1'
         self.conv = conv_templates[conv_template].copy()
 

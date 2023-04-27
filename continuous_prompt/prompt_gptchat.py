@@ -56,7 +56,7 @@ class GPTChatPrompter:
                                        "should respond with a python dictionary, which contains the following " \
                                        "keys.\n\"correct\": a boolean variable indicates whether the original " \
                                        "answer is correct. It should be False if the original answer contradicts " \
-                                       "with searching summaries or provides incorrect information.\n\"has_answer\": a boolean variable indicates " \
+                                       "with searching summaries, provides incorrect information or does not provide any useful information.\n\"has_answer\": a boolean variable indicates " \
                                        "whether the searching summary contains the answer.\n\"answer\": the correct " \
                                        "answer, it should be the original answer if \"correct\" is True, " \
                                        "or it should be the answer generated from searching summaries if " \

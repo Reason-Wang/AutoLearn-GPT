@@ -1,11 +1,9 @@
-import logging
+# Adopted from Significant-Gravitas.
 
+import logging
 from bs4 import BeautifulSoup
 import requests
 from urllib.parse import urlparse, urljoin
-
-
-# Function to check if the URL is valid
 from openai import InvalidRequestError
 
 

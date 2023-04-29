@@ -40,14 +40,19 @@ def load_model(model_name, device, num_gpus,  load_8bit=False, debug=False, cach
         model = AutoModel.from_pretrained(model_name, trust_remote_code=True).half().cuda()
     else:
         tokenizer = AutoTokenizer.from_pretrained(model_name, cache_dir=cache_dir, use_fast=False)
-        model = AutoModelForCausalLM.from_pretrained(model_name,
-            low_cpu_mem_usage=True, cache_dir=cache_dir, **kwargs)
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            low_cpu_mem_usage=True,
+            load_in_8bit=load_8bit,
+            cache_dir=cache_dir,
+            **kwargs
+        )
 
-    if load_8bit:
-        compress_module(model, device)
+    # if load_8bit:
+    #     compress_module(model, device)
 
-    if (device == "cuda" and num_gpus == 1) or device == "mps":
-        model.to(device)
+    # if (device == "cuda" and num_gpus == 1) or device == "mps":
+    #     model.to(device)
 
     if debug:
         print(model)
@@ -124,10 +129,10 @@ class Vicuna:
     def __init__(
             self,
             model_name,
-            max_new_tokens=96,
+            max_new_tokens=512,
             temperature=0.7,
             device='cuda',
-            num_gpus=1,
+            num_gpus='auto',
             load_8bit=True,
             debug=False,
             cache_dir='../vicuna/cache'

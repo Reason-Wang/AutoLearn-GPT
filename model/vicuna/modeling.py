@@ -1,5 +1,13 @@
+import copy
+
 import torch
-from transformers import AutoTokenizer, AutoModel, AutoModelForCausalLM
+import transformers
+from transformers import (
+    AutoTokenizer,
+    AutoModel,
+    AutoModelForCausalLM,
+    AdamW
+)
 from model.vicuna.compression import compress_module
 from model.vicuna.conversation import conv_templates
 from model.vicuna.conversation import SeparatorStyle
@@ -137,21 +145,20 @@ class Vicuna:
             debug=False,
             cache_dir='../vicuna/cache'
     ):
+        print(cache_dir)
         self.max_new_tokens = max_new_tokens
         self.temperature = temperature
         self.device = device
-
-        model, self.tokenizer = load_model(
+        self.tokenizer = transformers.LlamaTokenizer.from_pretrained(model_name, cache_dir=cache_dir)
+        model = AutoModelForCausalLM.from_pretrained(
             model_name,
-            device,
-            num_gpus,
-            load_8bit,
-            debug,
-            cache_dir
+            load_in_8bit=load_8bit,
+            device_map="auto",
+            cache_dir=cache_dir
         )
 
-        # if load_8bit:
-        #     model = prepare_model_for_int8_training(model)
+        if load_8bit:
+            model = prepare_model_for_int8_training(model)
 
         config = LoraConfig(
             r=8,
@@ -164,8 +171,12 @@ class Vicuna:
 
         self.model = get_peft_model(model, config)
 
-        conv_template = 'v1'
+        conv_template = 'autolearn'
         self.conv = conv_templates[conv_template].copy()
+        self.optimizer = AdamW(self.model.parameters(), lr=1e-5)
+        self.accumulation_steps = 32
+        self.current_step = 0
+        self.losses = []
 
     def chat(self, input_text, print_prompt=False):
 
@@ -173,21 +184,21 @@ class Vicuna:
         self.conv.append_message(self.conv.roles[0], input_text)
         self.conv.append_message(self.conv.roles[1], None)
         prompt = self.conv.get_prompt()
+
         if print_prompt:
             print(prompt)
-        skip_echo_len = len(prompt) + 1
+        inputs = self.tokenizer(prompt, return_tensors="pt")
+        for k, v in inputs.items():
+            inputs[k] = v.to(self.device)
+        outputs = self.model.generate(**inputs, max_new_tokens=self.max_new_tokens, do_sample=True,
+                                      temperature=self.temperature)
+        inputs_token_length = len(inputs.input_ids[0])
+        new_tokens = outputs[0][inputs_token_length:]
+        text = self.tokenizer.decode(new_tokens, skip_special_tokens=True)
 
-        params = {
-            "prompt": prompt,
-            "temperature": self.temperature,
-            "max_new_tokens": self.max_new_tokens,
-            "stop": self.conv.sep if self.conv.sep_style == SeparatorStyle.SINGLE else self.conv.sep2,
-        }
+        self.conv.messages[-1][-1] = text
 
-        output = generate_output(self.model, self.tokenizer, params, self.device)
-        self.conv.messages.append(("Assistant", output))
-
-        return output
+        return text
 
     def clear_history(self):
         conv_template = 'v1'
@@ -195,7 +206,7 @@ class Vicuna:
 
     def generate(self, input_text, print_prompt=False):
 
-        conv_template = 'v1'
+        conv_template = 'autolearn'
         conv = conv_templates[conv_template].copy()
 
         conv.append_message(conv.roles[0], input_text)
@@ -203,15 +214,48 @@ class Vicuna:
         prompt = conv.get_prompt()
         if print_prompt:
             print(prompt)
-        skip_echo_len = len(prompt) + 1
+        inputs = self.tokenizer(prompt, return_tensors="pt")
+        for k, v in inputs.items():
+            inputs[k] = v.to(self.device)
+        outputs = self.model.generate(**inputs, max_new_tokens=self.max_new_tokens, do_sample=True, temperature=self.temperature)
+        inputs_token_length = len(inputs.input_ids[0])
+        new_tokens = outputs[0][inputs_token_length:]
+        text = self.tokenizer.decode(new_tokens, skip_special_tokens=True)
 
-        params = {
-            "prompt": prompt,
-            "temperature": self.temperature,
-            "max_new_tokens": self.max_new_tokens,
-            "stop": conv.sep if conv.sep_style == SeparatorStyle.SINGLE else conv.sep2,
-        }
+        return text
 
-        output = generate_output(self.model, self.tokenizer, params, self.device)
+    def learn(self, instruction: str, output: str, print_prompt=False):
+        conv_template = 'autolearn'
+        conv = conv_templates[conv_template].copy()
 
-        return output
+        conv.append_message(conv.roles[0], instruction)
+        conv.append_message(conv.roles[1], None)
+
+        prompt = conv.get_prompt()
+        inputs_token_length = len(self.tokenizer(prompt, return_tensors='pt').input_ids[0])
+
+        prompt = prompt + output
+
+        if print_prompt:
+            print("Inputs length: " + str(inputs_token_length))
+            print(prompt)
+
+        inputs = self.tokenizer(prompt, return_tensors="pt")
+        for k, v in inputs.items():
+            inputs[k] = v.to(self.device)
+        labels = copy.deepcopy(inputs.input_ids)
+        labels[0][:inputs_token_length] = -100 # Ignore index
+        if print_prompt:
+            print(labels)
+
+        outputs = self.model(**inputs, labels=labels)
+
+        self.current_step += 1
+        self.losses.append(outputs.loss.item())
+        outputs.loss.backward()
+        if self.current_step % self.accumulation_steps == 0:
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+
+        return outputs
+

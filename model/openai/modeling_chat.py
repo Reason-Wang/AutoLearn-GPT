@@ -61,6 +61,11 @@ class GPTChatModel:
             {"role": "system", "content": system}
         ]
 
+    def clear_history(self):
+        self.conv = [
+            {"role": "system", "content": self.system}
+        ]
+
     # one turn chat with retrieval to memory brain, do not save conversation
     def generate_with_memory(self, user_input: str, temperature=None):
         if self.no_brain:

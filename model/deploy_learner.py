@@ -1,4 +1,6 @@
 import time
+
+from model.transformers.causal_lm_modeling import CausalLMModel
 from model.vicuna.modeling import Vicuna
 import os
 import json
@@ -7,7 +9,8 @@ logging.basicConfig(level=logging.INFO)
 
 
 def main():
-    model = Vicuna("eachadea/vicuna-7b-1.1", load_8bit=True, cache_dir='/root/autodl-tmp/vicuna/cache')
+    # model = Vicuna("eachadea/vicuna-7b-1.1", load_8bit=True, cache_dir='/root/autodl-tmp/vicuna/cache')
+    model = CausalLMModel('chavinlo/alpaca-native', load_8bit=True, cache_dir='/root/autodl-tmp/alpaca/cache')
     exchange_info_path = "model/exchange/info.json"
     exchange_response_path = "model/exchange/response.json"
     while True:

@@ -3,12 +3,14 @@ import logging
 import os
 import time
 import openai
-from continuous_prompt.utils import Logger, extract_dict
-from model.vicuna.modeling import Vicuna
+from continuous_prompt.utils import Logger, extract_dict, anykey_to_continue
 from commands.connect import SSHClient
 from dotenv import load_dotenv
 from termcolor import colored
 from model.openai.modeling_chat import GPTChatModel
+
+os.environ["HTTPS_PROXY"] = "http://127.0.0.1:10809"
+os.environ["HTTP_PROXY"] = "http://127.0.0.1:10809"
 
 load_dotenv()
 
@@ -29,14 +31,13 @@ def main():
     working_space = "/root/autodl-tmp/"
     client = SSHClient(hostname, port, user, password, working_space)
 
-    system = "You are a helpful and curious assistant that always " \
-             "want to know the correct answers of questions and " \
-             "find the most efficient way to do that."
+    system = "You are a helpful assistant that generate outputs with the given format. You should follow the python syntax carefully."
 
     teacher = GPTChatModel(
         memory_brain="none",
         system=system,
-        no_brain=True
+        no_brain=True,
+        temperature=0.0
     )
 
     info = {
@@ -77,33 +78,67 @@ def main():
 
         principles_prompt = '''A good response for an instruction aims to solve the instruction perfectly. For the instruction \"{instruction}\", generate some principles that a good response should have.
 
-You should generate a python dictionary with the following format:
-{
+Format:
+{{
     "principle name 1": "Explanation for the principle 1",
     "principle name 2": "Explanation for the principle 2",
     # Other principles with the same format
-}'''
+}}'''
+        LOGGER.info(principles_prompt.format(instruction=instruction), "System", "blue")
+        anykey_to_continue()
         principles_dict_string = teacher.generate(principles_prompt.format(instruction=instruction))
+        LOGGER.info(principles_dict_string, "Model", "yellow")
         principles_dict = extract_dict(principles_dict_string)
 
         should_learn = False
         for k, v in principles_dict.items():
-            principle_check_prompt = '''For instruction "{instruction}" "{principle}" is a principle meaning that {explanation} Does the following response follow the principle?
-
+            principle_check_prompt = '''For instruction "{instruction}" The response is:
 {response}
 
-You should generate a python dictionary with the following format:
-{
+
+"{principle}" is a principle meaning that {explanation}. Find whether the response followed the principle.
+
+Generation format: python dictionary as follows:
+{{
     "follow_principle": True or False, # a boolean value indicates whether the response follows the principle
     "explanation": "Explain why the response follows or does not follow the principle"
-}'''
+}}'''
+            LOGGER.info(principle_check_prompt.format(instruction=instruction, principle=k, explanation=v.lower(), response=response), "System", "blue")
+            anykey_to_continue()
             principle_check_dict_string = teacher.generate(principle_check_prompt.format(instruction=instruction, principle=k, explanation=v.lower(), response=response))
+            LOGGER.info(principle_check_dict_string, "Model", "yellow")
             principle_check_dict = extract_dict(principle_check_dict_string)
             if not principle_check_dict["follow_principle"]:
                 should_learn = True
-                rewrite_prompt = '''Rewrite a response based on the original response, which follows the principle.'''
-                new_response = teacher.chat(rewrite_prompt)
-                response = new_response
+                action_prompt = '''For instruction \"{instruction}\", The following is a response:
+{response}
+
+The response does not follow the \"{principle}\" principle, which means {explanation}. Choose one of the actions to do:
+1. Search the internet. Suitable for collecting information, facts verification, etc.
+2. Rewrite the response.
+
+Generation format: python dictionary as follows:
+{{
+    "action_number": 1 or 2, # the number corresponding to the action
+    "explanation": "Explain why to choose the action."
+}}'''
+                LOGGER.info(action_prompt, "System", "blue")
+                anykey_to_continue()
+                action_dict_string = teacher.generate(action_prompt.format(instruction=instruction, response=response, principle=k, explanation=v))
+                LOGGER.info(action_dict_string, "Model", "yellow")
+                action_dict = extract_dict(action_dict_string)
+                if action_dict['action_number'] == 1:
+                    raise NotImplementedError
+                elif action_dict['action_number'] == 2:
+                    rewrite_prompt = '''For instruction \"{instruction}\", The following is a response:
+{response}
+
+The response does not follow the \"{principle}\" principle, which means {explanation}. Rewrite the response to make it follow the principle.'''
+                    LOGGER.info(rewrite_prompt, "System", "blue")
+                    anykey_to_continue()
+                    new_response = teacher.generate(rewrite_prompt)
+                    LOGGER.info(new_response, "Model", "yellow")
+                    response = new_response
 
             teacher.clear_history()
 
@@ -115,6 +150,8 @@ You should generate a python dictionary with the following format:
             with open("model/exchange/info.json", "w") as f:
                 json.dump(info, f)
             client.send_file("model/exchange/info.json")
+            LOGGER.info("Instructed the learner to learn...", "System", "blue")
+            anykey_to_continue()
 
 
 

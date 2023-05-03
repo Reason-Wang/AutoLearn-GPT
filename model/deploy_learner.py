@@ -26,13 +26,16 @@ def main():
                 elif action == 'chat':
                     logging.info("chat")
                     text = model.generate(info['instruction'])
-                    info['done'] = True
-                    with open(exchange_info_path, 'w') as f:
-                        json.dump(info, f)
-                    with open(exchange_response_path, 'w') as f:
-                        json.dump({'text': text}, f)
                 elif action == 'quit':
                     break
+
+                # for all actions except 'quit', set 'done' to True
+                info['done'] = True
+                with open(exchange_info_path, 'w') as f:
+                    json.dump(info, f)
+                with open(exchange_response_path, 'w') as f:
+                    json.dump({'text': text}, f)
+
         time.sleep(1)
 
 

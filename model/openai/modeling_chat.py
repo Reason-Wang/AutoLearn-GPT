@@ -1,4 +1,7 @@
+import copy
 import time
+from typing import List
+
 import openai
 from termcolor import colored
 
@@ -39,7 +42,7 @@ def format_memories(memories):
 
 
 class GPTChatModel:
-    def __init__(self, memory_brain: str, system="You are a helpful assistant.", temperature=0.3, no_brain=False):
+    def __init__(self, memory_brain: str, system="You are a helpful assistant.", temperature=0.3, no_brain=False, incontext_example: List[List[str]]=None):
         self.model = "gpt-3.5-turbo"
         self.no_brain = no_brain
         if not no_brain:
@@ -60,6 +63,11 @@ class GPTChatModel:
         self.conv = [
             {"role": "system", "content": system}
         ]
+        self.generate_template = copy.deepcopy(self.conv)
+        if incontext_example is not None:
+            for ex in incontext_example:
+                self.generate_template.append({'role': "user", "content": ex[0]})
+                self.generate_template.append({'role': "assistant", "content": ex[1]})
 
     def clear_history(self):
         self.conv = [
@@ -105,12 +113,11 @@ class GPTChatModel:
 
     # one turn chat without saving conversation to history
     def generate(self, user_input, temperature=None):
+        generate_template = copy.deepcopy(self.generate_template)
+        generate_template.append({"role": "user", "content": user_input})
         response = request(
             model=self.model,
-            messages=[
-                {"role": "system", "content": self.system},
-                {"role": "user", "content": user_input}
-            ],
+            messages=generate_template,
             temperature=self.temperature if temperature is None else temperature
         )
 

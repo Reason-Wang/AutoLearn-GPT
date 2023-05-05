@@ -8,7 +8,7 @@ from termcolor import colored
 
 from commands.browse import browse_website
 from commands.search import google_official_search
-from continuous_prompt.utils import (
+from continuous_prompts.utils import (
     extract_dict,
     extract_double_quotes,
     anykey_to_continue,

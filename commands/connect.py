@@ -1,5 +1,6 @@
 import paramiko
 
+
 class SSHClient:
     def __init__(self, hostname, port, username, password, working_space: str=""):
         ssh = paramiko.SSHClient()
@@ -21,3 +22,18 @@ class SSHClient:
     def close(self):
         self.ssh.close()
         self.scp.close()
+
+
+class LocalClient:
+    def __init__(self, working_space: str=""):
+        self.working_space = working_space
+
+    def get_file(self, file_name: str):
+        pass
+
+    def send_file(self, file_name: str):
+        pass
+
+    def close(self):
+        pass
+
